@@ -18,6 +18,7 @@ Dependencies
 ~~~~~~~~~~~~
 
 django-tagging
+jquery-ui 1.8.5
 
 Optional Dependencies
 ~~~~~~~~~~~~~~~~~~~~~
@@ -43,6 +44,7 @@ Add to your Django settings.py file::
         'tagging_ext',
     )
     
+Also add jquery-ui css and javascript media files. A custom jquery-ui package can be built at http://jqueryui.com/download. Be sure to include the autocomplete module.
 
 View rendering via root url_conf
 =================================

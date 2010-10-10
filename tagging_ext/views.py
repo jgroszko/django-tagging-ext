@@ -8,15 +8,16 @@ from sys import stderr
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import connection
-from django.db.models import get_model
+from django.db.models import get_model, Count
 from django.http import Http404, HttpResponse
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 from django.template.defaultfilters import slugify
+from django.utils import simplejson
 
 from django.contrib.contenttypes.models import ContentType
 
-from tagging.models import Tag # use these to check for tag content
+from tagging.models import Tag, TaggedItem # use these to check for tag content
 
 def get_model_counts(tagged_models, tag):
     """ This does a model count so the side bar looks nice.
@@ -144,7 +145,7 @@ def tag_by_model(request, tag, model,
 def autocomplete(request, app_label=None, model=None):
     """returns ``\\n`` delimited strings in the form <tag>||(#)
 
-    GET params are ``q``, ``limit``, ``counts``, ``q`` is what the user
+    GET params are ``term``, ``limit``, ``counts``, ``term`` is what the user
     has typed, ``limit`` defaults to 10, and ``counts`` can be "model", "all"
     or, if absent, will default to all - ie a site-wide count.
     """
@@ -158,10 +159,10 @@ def autocomplete(request, app_label=None, model=None):
     else:
         model = None
     
-    if not request.GET.has_key("q"):
+    if not request.GET.has_key("term"):
         raise Http404
     else:
-        q = request.GET["q"]
+        q = request.GET["term"]
     
     # counts can be 'all', 'model' or 'None'
     counts = request.GET.get("counts", "all")
@@ -181,7 +182,8 @@ def autocomplete(request, app_label=None, model=None):
         l = sorted(list(tags),
             lambda x, y: cmp(y.items.all().count(), x.items.all().count())
         )
-        tag_list = "\n".join([ '%s||(%s)' % (tag.name, tag.items.all().count() ) for tag in l if tag])
+        tag_list = [{'label': "%s (%s)" % (tag.name, tag.items.all().count() ),
+                     'value': tag.name} for tag in l if tag]
 
     elif counts == "model":
         if model:
@@ -189,13 +191,12 @@ def autocomplete(request, app_label=None, model=None):
                 lambda x, y:
                     cmp(y.items.filter(content_type=model).count(), x.items.filter(content_type=model).count())
             )
-            tag_list = "\n".join(
-                ["%s||(%s)" % (tag.name, tag.items.filter(content_type=model).count()) for tag in l if tag]
-            )
+            tag_list = [{'label': "%s (%s)" % (tag.name, tag.items.filter(content_type=model).count()),
+                         'value': tag.name} for tag in l if tag]
         else:
             raise Exception(
                 'You asked for a model with GET but did not pass one to the url'
             )
     else:
-        tag_list = "\n".join([tag.name for tag in tags if tag])
-    return HttpResponse(tag_list)
+        tag_list = [tag.name for tag in tags if tag]
+    return HttpResponse(simplejson.dumps(tag_list))

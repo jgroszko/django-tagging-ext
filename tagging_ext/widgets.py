@@ -32,21 +32,23 @@ class TagAutoCompleteInput(forms.TextInput):
         
         return output + mark_safe(u"""
             <script type="text/javascript">
-                jQuery("#id_%s").autocomplete("%s", {
-                    max: 10,
-                    highlight: false,
-                    multiple: true,
-                    multipleSeparator: " ",
-                    scroll: true,
-                    scrollHeight: 300,
-                    matchContains: true,
-                    autoFill: true,
-                    formatItem: function(data, i, n, value){
-                        return data[0]+" "+data[2];
-                    },
-                    formatResult: function(data, value){
-                        return value;
-                    }
+                $(function() {
+                    $("#id_%s").autocomplete({
+                        source: function(request, response) {
+                            $.getJSON("%s", {
+                                term: request.term.split(" ").pop(),
+                            }, response);
+                        },
+                        focus: function() { return false; },
+                        select: function(event, ui) {
+                            var terms = this.value.split(" ");
+                            terms.pop();
+                            terms.push(ui.item.value);
+                            terms.push("");
+                            this.value = terms.join(" ");
+                            return false;
+                        },
+                    })
                 });
             </script>""" % (
                 name,
