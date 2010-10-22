@@ -41,11 +41,15 @@ class TagAutoCompleteInput(forms.TextInput):
                         },
                         focus: function() { return false; },
                         select: function(event, ui) {
-                            var terms = this.value.split(" ");
+                            var separator = " ";
+                            if(this.value.search(",") != -1)
+                                separator = ",";
+
+                            var terms = this.value.split(separator);
                             terms.pop();
-                            terms.push(ui.item.value);
+                            terms.push($.trim(ui.item.value));
                             terms.push("");
-                            this.value = terms.join(" ");
+                            this.value = terms.join(", ");
                             return false;
                         },
                     })
